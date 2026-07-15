@@ -39,9 +39,9 @@ app.get('/tasks', (req, res) => {
     res.send(tasks)
 })
 
-const getTaskById = async (req, res) => {
+const getTaskById = (req, res) => {
     const { id } = req.params
-    const searchTask = tasks.find(task => task.id == id)
+    const searchTask = tasks.find(task => task.id === id)
     if (!searchTask) {
         return res.status(404).json({
             "error": `Task ${id} not found`
@@ -51,6 +51,22 @@ const getTaskById = async (req, res) => {
 }
 
 app.get('/tasks/:id', getTaskById)
+
+const createNewTask = (req, res) => {
+    if (!req.title) {
+        return res.status(400).json({
+            "error": "task title should not be empty"
+        })
+    }
+    newTask = req
+    const id = tasks.length - 1
+    newTask.id = id
+    newTask.done = false
+    tasks.push(newTask)
+    return res.send(newTask)
+}
+
+app.post('/tasks', createNewTask)
 
 app.listen(port, () => {
     console.log(`To-do app listening on port ${port}`)
