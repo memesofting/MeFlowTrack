@@ -76,9 +76,46 @@ const createNewTask = (req, res) => {
     return res.status(201).json(tasks)
 }
 
+const updateTask = (req, res) => {
+    const {id} = req.params
+    const {title, done} = req.body
+
+    if (title == undefined || done == undefined){
+        return res.status(400).json({
+            error: "Bad request"
+        })
+    }
+    const toUpdate = tasks.find(task => task.id == id)
+    if (!toUpdate){
+        return res.status(404).json({
+            error: `Task ${id} not found`
+        })
+    }
+    toUpdate.title = title;
+    toUpdate.done = done
+    return res.status(200).send()
+}
+
+const deleteTask = (req, res) => {
+    const id = Number(req.params.id)
+
+    const idToDelete = tasks.findIndex(task => task.id == id)
+    if (idToDelete === -1) {
+        return res.status(404).json({
+            error: `Task ${id} not found`
+        });
+    }
+    tasks.splice(idToDelete, 1)
+    return res.status(204).send()
+}
+
 app.get('/tasks/:id', getTaskById)
 
 app.post('/tasks', createNewTask)
+
+app.put('/tasks/:id', updateTask)
+
+app.delete('/tasks/:id', deleteTask)
 
 app.listen(port, () => {
     console.log(`To-do app listening on port ${port}`)
