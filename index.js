@@ -1,6 +1,8 @@
 const express = require('express');
 
 const app = express();
+app.use(express.json());
+
 const port = 3000;
 
 const tasks = [
@@ -41,7 +43,12 @@ app.get('/tasks', (req, res) => {
 
 const getTaskById = (req, res) => {
     const { id } = req.params
-    const searchTask = tasks.find(task => task.id === id)
+    if (isNaN(id)){
+        return res.status(400).json({
+            error: "Task id should be a number"
+        })
+    }
+    const searchTask = tasks.find(task => task.id == id)
     if (!searchTask) {
         return res.status(404).json({
             "error": `Task ${id} not found`
@@ -50,21 +57,26 @@ const getTaskById = (req, res) => {
     return res.send(searchTask)
 }
 
-app.get('/tasks/:id', getTaskById)
 
 const createNewTask = (req, res) => {
-    if (!req.title) {
+    const {title} = req.body;
+    if (!title) {
+        comsole.log(title);
         return res.status(400).json({
             "error": "task title should not be empty"
-        })
+        });
     }
-    newTask = req
-    const id = tasks.length - 1
-    newTask.id = id
-    newTask.done = false
-    tasks.push(newTask)
-    return res.send(newTask)
+    const id = tasks.length + 1
+    const newTask = {
+        id: id,
+        title,
+        done: false
+    };
+    tasks.push(newTask);
+    return res.status(201).json(tasks)
 }
+
+app.get('/tasks/:id', getTaskById)
 
 app.post('/tasks', createNewTask)
 
