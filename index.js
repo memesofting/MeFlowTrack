@@ -1,7 +1,10 @@
 const express = require('express');
+const swaggerUi = require('swagger-ui-express')
+const swaggerDoc = require('./swagger.json')
 
 const app = express();
 app.use(express.json());
+app.use('/docs', swaggerUi.serve)
 
 const port = 3000;
 
@@ -23,23 +26,6 @@ const tasks = [
     }
 ]
 
-app.get('/', (req, res) => {
-    res.send({
-        "name": "Task API",
-        "version": "1.0",
-        "endpoints": ["/tasks"]
-    });
-});
-
-app.get('/health', (req, res) => {
-    res.send({
-        "status": "ok"
-    })
-})
-
-app.get('/tasks', (req, res) => {
-    res.send(tasks)
-})
 
 const getTaskById = (req, res) => {
     const { id } = req.params
@@ -109,6 +95,24 @@ const deleteTask = (req, res) => {
     return res.status(204).send()
 }
 
+app.get('/', (req, res) => {
+    res.send({
+        "name": "Task API",
+        "version": "1.0",
+        "endpoints": ["/tasks"]
+    });
+});
+
+app.get('/health', (req, res) => {
+    res.send({
+        "status": "ok"
+    })
+})
+
+app.get('/tasks', (req, res) => {
+    res.send(tasks)
+})
+
 app.get('/tasks/:id', getTaskById)
 
 app.post('/tasks', createNewTask)
@@ -116,6 +120,8 @@ app.post('/tasks', createNewTask)
 app.put('/tasks/:id', updateTask)
 
 app.delete('/tasks/:id', deleteTask)
+
+app.get('/docs', swaggerUi.setup(swaggerDoc))
 
 app.listen(port, () => {
     console.log(`To-do app listening on port ${port}`)
