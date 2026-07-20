@@ -80,5 +80,5 @@ curl -X DELETE http://localhost:3000/tasks/1
 
 ## Notes
 
-- The API uses an in-memory task list, so all changes are lost when the server restarts.
+- The API uses an in-memory task list, so all changes are lost when the server restarts. This is becuase the list is initialised when the server runs and is only available for that sesssion, after restart, it is cleared
 - The Swagger documentation is loaded from `swagger.json`.
