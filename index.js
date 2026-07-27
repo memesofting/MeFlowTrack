@@ -1,12 +1,41 @@
 const express = require("express");
 const swaggerUi = require("swagger-ui-express");
 const swaggerDoc = require("./swagger.json");
+const Database = require("better-sqlite3")
 
 const app = express();
 app.use(express.json());
 app.use("/docs", swaggerUi.serve);
 
 const port = 3000;
+
+const db = new Database("tasks.db")
+
+const createTableQuery = `
+  CREATE TABLE IF NOT EXISTS tasks(
+    id INTEGER PRIMARY KEY,
+    title TEXT NOT NULL UNIQUE,
+    done INTEGER
+  );
+`
+db.exec(createTableQuery)
+
+const insert = db.prepare("INSERT INTO tasks (id, title, done) VALUES (@id, @title, @done)")
+
+const insertTasks = db.transaction(
+  (tasks) => {
+    for (const task of tasks) insert.run(task);
+  }
+);
+
+insertTasks([
+  { id: 1, title: "Clear desk", done: 1 },
+  { id: 2, title: "Clean the roomk", done: 0 },
+  { id: 3, title: "Close all windows", done: 1 }
+])
+
+const tasks = db.prepare("SELECT * FROM tasks").all();
+console.log(tasks);
 
 const allTasks = [
   {
@@ -28,19 +57,19 @@ const allTasks = [
 
 const getTasks = (req, res) => {
   const { done } = req.query;
-  if (done){
-      if (done == "true") {
-        const filteredTasks = allTasks.filter((task) => task.done == true);
-        return res.send(filteredTasks);
-      }else if (done == "false"){
-        const filteredTasks = allTasks.filter((task) => task.done == false);
-        return res.send(filteredTasks);
-      }
-      else{
-        return res.status(400).json({
-            error: "Bad request, done can only be true or false"
-        })
-      }
+  if (done) {
+    if (done == "true") {
+      const filteredTasks = allTasks.filter((task) => task.done == true);
+      return res.send(filteredTasks);
+    } else if (done == "false") {
+      const filteredTasks = allTasks.filter((task) => task.done == false);
+      return res.send(filteredTasks);
+    }
+    else {
+      return res.status(400).json({
+        error: "Bad request, done can only be true or false"
+      })
+    }
   }
   res.send(allTasks);
 };
