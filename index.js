@@ -13,47 +13,53 @@ const db = new Database("tasks.db")
 
 const createTableQuery = `
   CREATE TABLE IF NOT EXISTS tasks(
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL UNIQUE,
     done INTEGER
   );
 `
 db.exec(createTableQuery)
 
-const insert = db.prepare("INSERT INTO tasks (id, title, done) VALUES (@id, @title, @done)")
+// check for empty table befor seeding
+const count = db.prepare("SELECT COUNT(*) FROM tasks").get()
 
-const insertTasks = db.transaction(
-  (tasks) => {
-    for (const task of tasks) insert.run(task);
-  }
-);
+if (count == 0){
+  const insert = db.prepare("INSERT INTO tasks (title, done) VALUES (?, ?)")
+  
+  const insertTasks = db.transaction(
+    (tasks) => {
+      for (const task of tasks) insert.run(task.title, task.done);
+    }
+  );
+  
+  insertTasks([
+    { title: "Clear desk", done: 1 },
+    { title: "Clean the roomk", done: 0 },
+    { title: "Close all windows", done: 1 }
+  ])
+}
 
-insertTasks([
-  { id: 1, title: "Clear desk", done: 1 },
-  { id: 2, title: "Clean the roomk", done: 0 },
-  { id: 3, title: "Close all windows", done: 1 }
-])
 
-const tasks = db.prepare("SELECT * FROM tasks").all();
-console.log(tasks);
+const allTasks = db.prepare("SELECT * FROM tasks").all();
+console.log(allTasks);
 
-const allTasks = [
-  {
-    id: 1,
-    title: "Clear desk",
-    done: true,
-  },
-  {
-    id: 2,
-    title: "Clean the room",
-    done: false,
-  },
-  {
-    id: 3,
-    title: "Close all windows",
-    done: true,
-  },
-];
+// const allTasks = [
+//   {
+//     id: 1,
+//     title: "Clear desk",
+//     done: true,
+//   },
+//   {
+//     id: 2,
+//     title: "Clean the room",
+//     done: false,
+//   },
+//   {
+//     id: 3,
+//     title: "Close all windows",
+//     done: true,
+//   },
+// ];
 
 const getTasks = (req, res) => {
   const { done } = req.query;
