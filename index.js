@@ -76,6 +76,7 @@ const getTaskById = (req, res) => {
       error: `Task ${id} not found`,
     });
   }
+  console.log(searchTask)
   return res.send(searchTask);
 };
 
@@ -103,31 +104,35 @@ const updateTask = (req, res) => {
 
   if (title == undefined || done == undefined) {
     return res.status(400).json({
-      error: "Bad request",
+      error: "Invalid body",
     });
   }
-  const toUpdate = allTasks.find((task) => task.id == id);
-  if (!toUpdate) {
+  // const toUpdate = allTasks.find((task) => task.id == id);
+  const toUpdate = db.prepare("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = ?)").get(id)
+  console.log(toUpdate)
+  if (Object.values(toUpdate)[0] == 0) {
     return res.status(404).json({
       error: `Task ${id} not found`,
     });
   }
-  toUpdate.title = title;
-  toUpdate.done = done;
-  return res.status(200).send();
+  db.prepare("UPDATE tasks SET title = ?, done = ? WHERE id = ?").run(title, done, id)
+  return res.status(200).json({message: `task ${id} updated succesfully`});
 };
 
 const deleteTask = (req, res) => {
-  const id = Number(req.params.id);
+  // const id = Number(req.params.id);
+  const {id} = req.params;
 
-  const idToDelete = allTasks.findIndex((task) => task.id == id);
-  if (idToDelete === -1) {
+  // const idToDelete = allTasks.findIndex((task) => task.id == id);
+  const idToDelete = db.prepare("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = ?)").get(id)
+  if (Object.values(idToDelete)[0] == 0) {
     return res.status(404).json({
       error: `Task ${id} not found`,
     });
   }
-  allTasks.splice(idToDelete, 1);
-  return res.status(204).send();
+  // allTasks.splice(idToDelete, 1);
+  db.prepare("DELETE FROM tasks WHERE id = ?").run(id)
+  return res.status(204).json({message: `task ${id} deleted succesfully`});
 };
 
 const filterDone = (req, res) => {
