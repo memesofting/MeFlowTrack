@@ -40,35 +40,16 @@ if (count == 0){
 }
 
 
-const allTasks = db.prepare("SELECT * FROM tasks").all();
-console.log(allTasks);
-
-// const allTasks = [
-//   {
-//     id: 1,
-//     title: "Clear desk",
-//     done: true,
-//   },
-//   {
-//     id: 2,
-//     title: "Clean the room",
-//     done: false,
-//   },
-//   {
-//     id: 3,
-//     title: "Close all windows",
-//     done: true,
-//   },
-// ];
-
-const getTasks = (req, res) => {
+const getAllTasks = (req, res) => {
   const { done } = req.query;
   if (done) {
     if (done == "true") {
-      const filteredTasks = allTasks.filter((task) => task.done == true);
+      // const filteredTasks = allTasks.filter((task) => task.done == true);
+      const filteredTasks = db.prepare("SELECT * FROM tasks WHERE done = 1").all();
       return res.send(filteredTasks);
     } else if (done == "false") {
-      const filteredTasks = allTasks.filter((task) => task.done == false);
+      // const filteredTasks = allTasks.filter((task) => task.done == false);
+      const filteredTasks = db.prepare("SELECT * FROM tasks WHERE done = 0").all();
       return res.send(filteredTasks);
     }
     else {
@@ -77,7 +58,9 @@ const getTasks = (req, res) => {
       })
     }
   }
-  res.send(allTasks);
+  const allTasks = db.prepare("SELECT * FROM tasks").all();
+  // console.log(allTasks);
+  res.send(allTasks)
 };
 
 const getTaskById = (req, res) => {
@@ -87,7 +70,8 @@ const getTaskById = (req, res) => {
       error: "Task id should be a number",
     });
   }
-  const searchTask = allTasks.find((task) => task.id == id);
+  // const searchTask = allTasks.find((task) => task.id == id);
+  const searchTask = db.prepare("SELECT * FROM tasks WHERE id = ?").get(id);
   if (!searchTask) {
     return res.status(404).json({
       error: `Task ${id} not found`,
@@ -167,7 +151,7 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.get("/allTasks", getTasks);
+app.get("/allTasks", getAllTasks);
 
 app.get("/allTasks/:id", getTaskById);
 
