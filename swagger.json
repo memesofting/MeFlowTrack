@@ -262,7 +262,8 @@
             "type": "string"
           },
           "done": {
-            "type": "boolean"
+            "type": "integer",
+            "format": "int32"
           }
         },
         "required": ["id", "title", "done"]
@@ -283,7 +284,8 @@
             "type": "string"
           },
           "done": {
-            "type": "boolean"
+            "type": "integer",
+            "format": "int32"
           }
         },
         "required": ["title", "done"]

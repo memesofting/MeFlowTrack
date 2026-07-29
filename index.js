@@ -39,6 +39,7 @@ if (count == 0){
   ])
 }
 
+const allTasks = db.prepare("SELECT * FROM tasks").all();
 
 const getAllTasks = (req, res) => {
   const { done } = req.query;
@@ -58,8 +59,6 @@ const getAllTasks = (req, res) => {
       })
     }
   }
-  const allTasks = db.prepare("SELECT * FROM tasks").all();
-  // console.log(allTasks);
   res.send(allTasks)
 };
 
@@ -88,14 +87,14 @@ const createNewTask = (req, res) => {
       error: "task title should not be empty",
     });
   }
-  const id = allTasks.length + 1;
   const newTask = {
-    id: id,
     title,
-    done: false,
+    done: 0,
   };
-  allTasks.push(newTask);
-  return res.status(201).json(allTasks);
+  // allTasks.push(newTask);
+  db.prepare("INSERT INTO tasks (title, done) VALUES (?, ?)").run(newTask.title, newTask.done)
+  const tasks = db.prepare("SELECT * FROM tasks").all();
+  return res.status(201).json(tasks);
 };
 
 const updateTask = (req, res) => {
@@ -151,15 +150,15 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.get("/allTasks", getAllTasks);
+app.get("/tasks", getAllTasks);
 
-app.get("/allTasks/:id", getTaskById);
+app.get("/tasks/:id", getTaskById);
 
-app.post("/allTasks", createNewTask);
+app.post("/tasks", createNewTask);
 
-app.put("/allTasks/:id", updateTask);
+app.put("/tasks/:id", updateTask);
 
-app.delete("/allTasks/:id", deleteTask);
+app.delete("/tasks/:id", deleteTask);
 
 // app.get('/allTasks', filterDone)
 
