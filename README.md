@@ -78,7 +78,13 @@ curl -X PUT http://localhost:3000/tasks/1 \
 curl -X DELETE http://localhost:3000/tasks/1
 ```
 
+## Database Preview
+
+![Db browser](db_browser.png)
+
 ## Notes
 
-- The API uses an in-memory task list, so all changes are lost when the server restarts. This is becuase the list is initialised when the server runs and is only available for that sesssion, after restart, it is cleared
 - The Swagger documentation is loaded from `swagger.json`.
+- Database is stored in tasks.db created automatically on server startup
+- The API uses better-sqlite3 for task storage.
+- SQLite was chosen for its easy single-file setup

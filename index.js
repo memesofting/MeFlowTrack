@@ -39,36 +39,18 @@ if (count == 0){
   ])
 }
 
-
 const allTasks = db.prepare("SELECT * FROM tasks").all();
-console.log(allTasks);
 
-// const allTasks = [
-//   {
-//     id: 1,
-//     title: "Clear desk",
-//     done: true,
-//   },
-//   {
-//     id: 2,
-//     title: "Clean the room",
-//     done: false,
-//   },
-//   {
-//     id: 3,
-//     title: "Close all windows",
-//     done: true,
-//   },
-// ];
-
-const getTasks = (req, res) => {
+const getAllTasks = (req, res) => {
   const { done } = req.query;
   if (done) {
     if (done == "true") {
-      const filteredTasks = allTasks.filter((task) => task.done == true);
+      // const filteredTasks = allTasks.filter((task) => task.done == true);
+      const filteredTasks = db.prepare("SELECT * FROM tasks WHERE done = 1").all();
       return res.send(filteredTasks);
     } else if (done == "false") {
-      const filteredTasks = allTasks.filter((task) => task.done == false);
+      // const filteredTasks = allTasks.filter((task) => task.done == false);
+      const filteredTasks = db.prepare("SELECT * FROM tasks WHERE done = 0").all();
       return res.send(filteredTasks);
     }
     else {
@@ -77,7 +59,7 @@ const getTasks = (req, res) => {
       })
     }
   }
-  res.send(allTasks);
+  res.send(allTasks)
 };
 
 const getTaskById = (req, res) => {
@@ -87,12 +69,14 @@ const getTaskById = (req, res) => {
       error: "Task id should be a number",
     });
   }
-  const searchTask = allTasks.find((task) => task.id == id);
+  // const searchTask = allTasks.find((task) => task.id == id);
+  const searchTask = db.prepare("SELECT * FROM tasks WHERE id = ?").get(id);
   if (!searchTask) {
     return res.status(404).json({
       error: `Task ${id} not found`,
     });
   }
+  console.log(searchTask)
   return res.send(searchTask);
 };
 
@@ -104,14 +88,14 @@ const createNewTask = (req, res) => {
       error: "task title should not be empty",
     });
   }
-  const id = allTasks.length + 1;
   const newTask = {
-    id: id,
     title,
-    done: false,
+    done: 0,
   };
-  allTasks.push(newTask);
-  return res.status(201).json(allTasks);
+  // allTasks.push(newTask);
+  db.prepare("INSERT INTO tasks (title, done) VALUES (?, ?)").run(newTask.title, newTask.done)
+  const tasks = db.prepare("SELECT * FROM tasks").all();
+  return res.status(201).json(tasks);
 };
 
 const updateTask = (req, res) => {
@@ -120,31 +104,35 @@ const updateTask = (req, res) => {
 
   if (title == undefined || done == undefined) {
     return res.status(400).json({
-      error: "Bad request",
+      error: "Invalid body",
     });
   }
-  const toUpdate = allTasks.find((task) => task.id == id);
-  if (!toUpdate) {
+  // const toUpdate = allTasks.find((task) => task.id == id);
+  const toUpdate = db.prepare("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = ?)").get(id)
+  console.log(toUpdate)
+  if (Object.values(toUpdate)[0] == 0) {
     return res.status(404).json({
       error: `Task ${id} not found`,
     });
   }
-  toUpdate.title = title;
-  toUpdate.done = done;
-  return res.status(200).send();
+  db.prepare("UPDATE tasks SET title = ?, done = ? WHERE id = ?").run(title, done, id)
+  return res.status(200).json({message: `task ${id} updated succesfully`});
 };
 
 const deleteTask = (req, res) => {
-  const id = Number(req.params.id);
+  // const id = Number(req.params.id);
+  const {id} = req.params;
 
-  const idToDelete = allTasks.findIndex((task) => task.id == id);
-  if (idToDelete === -1) {
+  // const idToDelete = allTasks.findIndex((task) => task.id == id);
+  const idToDelete = db.prepare("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = ?)").get(id)
+  if (Object.values(idToDelete)[0] == 0) {
     return res.status(404).json({
       error: `Task ${id} not found`,
     });
   }
-  allTasks.splice(idToDelete, 1);
-  return res.status(204).send();
+  // allTasks.splice(idToDelete, 1);
+  db.prepare("DELETE FROM tasks WHERE id = ?").run(id)
+  return res.status(204).json({message: `task ${id} deleted succesfully`});
 };
 
 const filterDone = (req, res) => {
@@ -167,15 +155,15 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.get("/allTasks", getTasks);
+app.get("/tasks", getAllTasks);
 
-app.get("/allTasks/:id", getTaskById);
+app.get("/tasks/:id", getTaskById);
 
-app.post("/allTasks", createNewTask);
+app.post("/tasks", createNewTask);
 
-app.put("/allTasks/:id", updateTask);
+app.put("/tasks/:id", updateTask);
 
-app.delete("/allTasks/:id", deleteTask);
+app.delete("/tasks/:id", deleteTask);
 
 // app.get('/allTasks', filterDone)
 
