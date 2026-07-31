@@ -2,7 +2,6 @@ const express = require("express");
 const swaggerUi = require("swagger-ui-express");
 const swaggerDoc = require("./swagger.json");
 const Database = require("better-sqlite3")
-// const {Pool} = require("pg")
 
 const app = express();
 app.use(express.json());
@@ -10,63 +9,48 @@ app.use("/docs", swaggerUi.serve);
 
 const port = 3000;
 
-// const pool = new Pool({
-//   host: "localhost",
-//   port: 5432,
-//   user: "postgres",
-//   password: "dev",
-//   database: "tasks",
-// });
+const db = new Database("tasks.db")
 
+const createTableQuery = `
+  CREATE TABLE IF NOT EXISTS tasks(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL UNIQUE,
+    done INTEGER
+  );
+`
+db.exec(createTableQuery)
 
-// async function init(){
-//   await pool.query(
-//     `
-//     CREATE TABLE IF NOT EXISTS tasks(
-//       id INTEGER PRIMARY KEY AUTOINCREMENT,
-//       title TEXT NOT NULL UNIQUE,
-//       done BOOLEAN
-//     );
-//   `
-//   )
-//   console.log("database initialised");
-//   process.exit()
-// }
+// check for empty table befor seeding
+const count = db.prepare("SELECT COUNT(*) FROM tasks").get()
 
-// init();
-
-// check for empty table before seeding
-
-// async function seed() {
-//   const count = await pool.query("SELECT COUNT(*) FROM tasks");
+if (count == 0){
+  const insert = db.prepare("INSERT INTO tasks (title, done) VALUES (?, ?)")
   
-//   if (count == 0){
-//     const tasks = [
-//       { title: "Clear desk", done: true },
-//       { title: "Clean the roomk", done: false },
-//       { title: "Close all windows", done: true }
-//     ];
+  const insertTasks = db.transaction(
+    (tasks) => {
+      for (const task of tasks) insert.run(task.title, task.done);
+    }
+  );
   
-//     for (const task of tasks) {
-//       await pool.query("INSERT INTO tasks (title, done) VALUES ($1, $2)",
-//       [task.title, task.done])
-//     };
-//   }
-// }
+  insertTasks([
+    { title: "Clear desk", done: 1 },
+    { title: "Clean the roomk", done: 0 },
+    { title: "Close all windows", done: 1 }
+  ])
+}
 
-// seed();
+const allTasks = db.prepare("SELECT * FROM tasks").all();
 
-const getAllTasks = async (req, res) => {
-  const allTasks = await pool.query("SELECT * FROM tasks");
+const getAllTasks = (req, res) => {
   const { done } = req.query;
   if (done) {
     if (done == "true") {
       // const filteredTasks = allTasks.filter((task) => task.done == true);
-      const filteredTasks = await pool.query("SELECT * FROM tasks WHERE done = true");
+      const filteredTasks = db.prepare("SELECT * FROM tasks WHERE done = 1").all();
       return res.send(filteredTasks);
     } else if (done == "false") {
       // const filteredTasks = allTasks.filter((task) => task.done == false);
-      const filteredTasks = await pool.query("SELECT * FROM tasks WHERE done = false");
+      const filteredTasks = db.prepare("SELECT * FROM tasks WHERE done = 0").all();
       return res.send(filteredTasks);
     }
     else {
@@ -86,7 +70,7 @@ const getTaskById = (req, res) => {
     });
   }
   // const searchTask = allTasks.find((task) => task.id == id);
-  const searchTask = db.prepare("SELECT * FROM tasks WHERE id = $1",[id]);
+  const searchTask = db.prepare("SELECT * FROM tasks WHERE id = ?").get(id);
   if (!searchTask) {
     return res.status(404).json({
       error: `Task ${id} not found`,
@@ -96,7 +80,7 @@ const getTaskById = (req, res) => {
   return res.send(searchTask);
 };
 
-const createNewTask = async (req, res) => {
+const createNewTask = (req, res) => {
   const { title } = req.body;
   if (!title) {
     comsole.log(title);
@@ -109,8 +93,8 @@ const createNewTask = async (req, res) => {
     done: 0,
   };
   // allTasks.push(newTask);
-  await pool.query("INSERT INTO tasks (title, done) VALUES ($1, $2)")
-  const tasks = await pool.query("SELECT * FROM tasks");
+  db.prepare("INSERT INTO tasks (title, done) VALUES (?, ?)").run(newTask.title, newTask.done)
+  const tasks = db.prepare("SELECT * FROM tasks").all();
   return res.status(201).json(tasks);
 };
 
