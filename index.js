@@ -3,58 +3,13 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerDoc = require("./swagger.json");
 const Database = require("better-sqlite3")
 // const {Pool} = require("pg")
+const pool = require("./db")
 
 const app = express();
 app.use(express.json());
 app.use("/docs", swaggerUi.serve);
 
 const port = 3000;
-
-// const pool = new Pool({
-//   host: "localhost",
-//   port: 5432,
-//   user: "postgres",
-//   password: "dev",
-//   database: "tasks",
-// });
-
-
-// async function init(){
-//   await pool.query(
-//     `
-//     CREATE TABLE IF NOT EXISTS tasks(
-//       id INTEGER PRIMARY KEY AUTOINCREMENT,
-//       title TEXT NOT NULL UNIQUE,
-//       done BOOLEAN
-//     );
-//   `
-//   )
-//   console.log("database initialised");
-//   process.exit()
-// }
-
-// init();
-
-// check for empty table before seeding
-
-// async function seed() {
-//   const count = await pool.query("SELECT COUNT(*) FROM tasks");
-  
-//   if (count == 0){
-//     const tasks = [
-//       { title: "Clear desk", done: true },
-//       { title: "Clean the roomk", done: false },
-//       { title: "Close all windows", done: true }
-//     ];
-  
-//     for (const task of tasks) {
-//       await pool.query("INSERT INTO tasks (title, done) VALUES ($1, $2)",
-//       [task.title, task.done])
-//     };
-//   }
-// }
-
-// seed();
 
 const getAllTasks = async (req, res) => {
   const allTasks = await pool.query("SELECT * FROM tasks");
@@ -78,7 +33,7 @@ const getAllTasks = async (req, res) => {
   res.send(allTasks)
 };
 
-const getTaskById = (req, res) => {
+const getTaskById = async (req, res) => {
   const { id } = req.params;
   if (isNaN(id)) {
     return res.status(400).json({
@@ -86,13 +41,13 @@ const getTaskById = (req, res) => {
     });
   }
   // const searchTask = allTasks.find((task) => task.id == id);
-  const searchTask = db.prepare("SELECT * FROM tasks WHERE id = $1",[id]);
+  const searchTask = await pool.query("SELECT * FROM tasks WHERE id = $1",[id]);
   if (!searchTask) {
     return res.status(404).json({
       error: `Task ${id} not found`,
     });
   }
-  console.log(searchTask)
+  // console.log(searchTask)
   return res.send(searchTask);
 };
 
@@ -106,15 +61,15 @@ const createNewTask = async (req, res) => {
   }
   const newTask = {
     title,
-    done: 0,
+    done: false,
   };
   // allTasks.push(newTask);
-  await pool.query("INSERT INTO tasks (title, done) VALUES ($1, $2)")
+  await pool.query("INSERT INTO tasks (title, done) VALUES ($1, $2)", [newTask.title, newTask.done])
   const tasks = await pool.query("SELECT * FROM tasks");
   return res.status(201).json(tasks);
 };
 
-const updateTask = (req, res) => {
+const updateTask = async (req, res) => {
   const { id } = req.params;
   const { title, done } = req.body;
 
@@ -124,30 +79,30 @@ const updateTask = (req, res) => {
     });
   }
   // const toUpdate = allTasks.find((task) => task.id == id);
-  const toUpdate = db.prepare("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = ?)").get(id)
-  console.log(toUpdate)
-  if (Object.values(toUpdate)[0] == 0) {
+  const toUpdate = await pool.query("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1)", [id])
+  // console.log(toUpdate)
+  if (toUpdate.rows[0].exists == false) {
     return res.status(404).json({
       error: `Task ${id} not found`,
     });
   }
-  db.prepare("UPDATE tasks SET title = ?, done = ? WHERE id = ?").run(title, done, id)
+  await pool.query("UPDATE tasks SET title = $1, done = $2 WHERE id = $3", [title, done, id])
   return res.status(200).json({message: `task ${id} updated succesfully`});
 };
 
-const deleteTask = (req, res) => {
+const deleteTask = async (req, res) => {
   // const id = Number(req.params.id);
   const {id} = req.params;
 
   // const idToDelete = allTasks.findIndex((task) => task.id == id);
-  const idToDelete = db.prepare("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = ?)").get(id)
-  if (Object.values(idToDelete)[0] == 0) {
+  const idToDelete = await pool.query("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1)",[id])
+  if (idToDelete.rows[0].exists == false) {
     return res.status(404).json({
       error: `Task ${id} not found`,
     });
   }
   // allTasks.splice(idToDelete, 1);
-  db.prepare("DELETE FROM tasks WHERE id = ?").run(id)
+  await pool.query("DELETE FROM tasks WHERE id = $1", [id])
   return res.status(204).json({message: `task ${id} deleted succesfully`});
 };
 

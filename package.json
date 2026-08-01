@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node initdb.js && node seed.js",
+    "start": "node initDb.js && node seed.js",
     "dev": "nodemon index.js"
   },
   "keywords": [],

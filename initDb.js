@@ -4,7 +4,7 @@ async function init(){
   await pool.query(
     `
     CREATE TABLE IF NOT EXISTS tasks(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
       title TEXT NOT NULL UNIQUE,
       done BOOLEAN
     );
