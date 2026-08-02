@@ -15,22 +15,30 @@ A simple Express-based task management API with Swagger documentation.
 
 ## Requirements
 
-- Node.js 18+ (or compatible)
-- npm
+- Docker
+- Docker Compose
 
 ## Setup
 
-1. Install dependencies:
+1. Clone the repo:
 
 ```bash
-npm install
+git clone https://github.com/memesofting/MeFlowTrack
+cd MeFlowTrack
 ```
 
-2. Start the server:
+2. Create a .env file:
 
+Create a .env file in project root from .env.example
+
+3. Build and start container
 ```bash
-npm run dev
+docker compose up --build
 ```
+This starts:
+- PostgreSQL database
+- Express API
+
 
 3. Open the API docs in your browser:
 
@@ -80,11 +88,11 @@ curl -X DELETE http://localhost:3000/tasks/1
 
 ## Database Preview
 
-![Db browser](db_browser.png)
+![Database](postgre_db.png)
 
 ## Notes
 
 - The Swagger documentation is loaded from `swagger.json`.
-- Database is stored in tasks.db created automatically on server startup
-- The API uses better-sqlite3 for task storage.
-- SQLite was chosen for its easy single-file setup
+- The API uses PostgreSQL for persistent task storage.
+- PostgreSQL runs in a Docker container managed by Docker Compose.
+- Database initialization and seed scripts are executed before the API starts.
