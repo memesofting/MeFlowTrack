@@ -1,7 +1,7 @@
 const express = require("express");
 const swaggerUi = require("swagger-ui-express");
 const swaggerDoc = require("./swagger.json");
-const pool = require("./db")
+const Database = require("better-sqlite3")
 
 const app = express();
 app.use(express.json());
@@ -9,17 +9,48 @@ app.use("/docs", swaggerUi.serve);
 
 const port = 3000;
 
-const getAllTasks = async (req, res) => {
-  const allTasks = await pool.query("SELECT * FROM tasks");
+const db = new Database("tasks.db")
+
+const createTableQuery = `
+  CREATE TABLE IF NOT EXISTS tasks(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL UNIQUE,
+    done INTEGER
+  );
+`
+db.exec(createTableQuery)
+
+// check for empty table befor seeding
+const count = db.prepare("SELECT COUNT(*) FROM tasks").get()
+
+if (count == 0){
+  const insert = db.prepare("INSERT INTO tasks (title, done) VALUES (?, ?)")
+  
+  const insertTasks = db.transaction(
+    (tasks) => {
+      for (const task of tasks) insert.run(task.title, task.done);
+    }
+  );
+  
+  insertTasks([
+    { title: "Clear desk", done: 1 },
+    { title: "Clean the roomk", done: 0 },
+    { title: "Close all windows", done: 1 }
+  ])
+}
+
+const allTasks = db.prepare("SELECT * FROM tasks").all();
+
+const getAllTasks = (req, res) => {
   const { done } = req.query;
   if (done) {
     if (done == "true") {
       // const filteredTasks = allTasks.filter((task) => task.done == true);
-      const filteredTasks = await pool.query("SELECT * FROM tasks WHERE done = true");
+      const filteredTasks = db.prepare("SELECT * FROM tasks WHERE done = 1").all();
       return res.send(filteredTasks);
     } else if (done == "false") {
       // const filteredTasks = allTasks.filter((task) => task.done == false);
-      const filteredTasks = await pool.query("SELECT * FROM tasks WHERE done = false");
+      const filteredTasks = db.prepare("SELECT * FROM tasks WHERE done = 0").all();
       return res.send(filteredTasks);
     }
     else {
@@ -31,7 +62,7 @@ const getAllTasks = async (req, res) => {
   res.send(allTasks)
 };
 
-const getTaskById = async (req, res) => {
+const getTaskById = (req, res) => {
   const { id } = req.params;
   if (isNaN(id)) {
     return res.status(400).json({
@@ -39,17 +70,17 @@ const getTaskById = async (req, res) => {
     });
   }
   // const searchTask = allTasks.find((task) => task.id == id);
-  const searchTask = await pool.query("SELECT * FROM tasks WHERE id = $1", [id]);
+  const searchTask = db.prepare("SELECT * FROM tasks WHERE id = ?").get(id);
   if (!searchTask) {
     return res.status(404).json({
       error: `Task ${id} not found`,
     });
   }
-  // console.log(searchTask)
+  console.log(searchTask)
   return res.send(searchTask);
 };
 
-const createNewTask = async (req, res) => {
+const createNewTask = (req, res) => {
   const { title } = req.body;
   if (!title) {
     comsole.log(title);
@@ -59,15 +90,15 @@ const createNewTask = async (req, res) => {
   }
   const newTask = {
     title,
-    done: false,
+    done: 0,
   };
   // allTasks.push(newTask);
-  await pool.query("INSERT INTO tasks (title, done) VALUES ($1, $2)", [newTask.title, newTask.done])
-  const tasks = await pool.query("SELECT * FROM tasks");
+  db.prepare("INSERT INTO tasks (title, done) VALUES (?, ?)").run(newTask.title, newTask.done)
+  const tasks = db.prepare("SELECT * FROM tasks").all();
   return res.status(201).json(tasks);
 };
 
-const updateTask = async (req, res) => {
+const updateTask = (req, res) => {
   const { id } = req.params;
   const { title, done } = req.body;
 
@@ -77,31 +108,31 @@ const updateTask = async (req, res) => {
     });
   }
   // const toUpdate = allTasks.find((task) => task.id == id);
-  const toUpdate = await pool.query("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1)", [id])
-  // console.log(toUpdate)
-  if (toUpdate.rows[0].exists == false) {
+  const toUpdate = db.prepare("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = ?)").get(id)
+  console.log(toUpdate)
+  if (Object.values(toUpdate)[0] == 0) {
     return res.status(404).json({
       error: `Task ${id} not found`,
     });
   }
-  await pool.query("UPDATE tasks SET title = $1, done = $2 WHERE id = $3", [title, done, id])
-  return res.status(200).json({ message: `task ${id} updated succesfully` });
+  db.prepare("UPDATE tasks SET title = ?, done = ? WHERE id = ?").run(title, done, id)
+  return res.status(200).json({message: `task ${id} updated succesfully`});
 };
 
-const deleteTask = async (req, res) => {
+const deleteTask = (req, res) => {
   // const id = Number(req.params.id);
-  const { id } = req.params;
+  const {id} = req.params;
 
   // const idToDelete = allTasks.findIndex((task) => task.id == id);
-  const idToDelete = await pool.query("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1)", [id])
-  if (idToDelete.rows[0].exists == false) {
+  const idToDelete = db.prepare("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = ?)").get(id)
+  if (Object.values(idToDelete)[0] == 0) {
     return res.status(404).json({
       error: `Task ${id} not found`,
     });
   }
   // allTasks.splice(idToDelete, 1);
-  await pool.query("DELETE FROM tasks WHERE id = $1", [id])
-  return res.status(204).json({ message: `task ${id} deleted succesfully` });
+  db.prepare("DELETE FROM tasks WHERE id = ?").run(id)
+  return res.status(204).json({message: `task ${id} deleted succesfully`});
 };
 
 const filterDone = (req, res) => {
