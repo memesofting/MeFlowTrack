@@ -1,8 +1,6 @@
 const express = require("express");
 const swaggerUi = require("swagger-ui-express");
 const swaggerDoc = require("./swagger.json");
-const Database = require("better-sqlite3")
-// const {Pool} = require("pg")
 const pool = require("./db")
 
 const app = express();
@@ -41,7 +39,7 @@ const getTaskById = async (req, res) => {
     });
   }
   // const searchTask = allTasks.find((task) => task.id == id);
-  const searchTask = await pool.query("SELECT * FROM tasks WHERE id = $1",[id]);
+  const searchTask = await pool.query("SELECT * FROM tasks WHERE id = $1", [id]);
   if (!searchTask) {
     return res.status(404).json({
       error: `Task ${id} not found`,
@@ -87,15 +85,15 @@ const updateTask = async (req, res) => {
     });
   }
   await pool.query("UPDATE tasks SET title = $1, done = $2 WHERE id = $3", [title, done, id])
-  return res.status(200).json({message: `task ${id} updated succesfully`});
+  return res.status(200).json({ message: `task ${id} updated succesfully` });
 };
 
 const deleteTask = async (req, res) => {
   // const id = Number(req.params.id);
-  const {id} = req.params;
+  const { id } = req.params;
 
   // const idToDelete = allTasks.findIndex((task) => task.id == id);
-  const idToDelete = await pool.query("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1)",[id])
+  const idToDelete = await pool.query("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1)", [id])
   if (idToDelete.rows[0].exists == false) {
     return res.status(404).json({
       error: `Task ${id} not found`,
@@ -103,7 +101,7 @@ const deleteTask = async (req, res) => {
   }
   // allTasks.splice(idToDelete, 1);
   await pool.query("DELETE FROM tasks WHERE id = $1", [id])
-  return res.status(204).json({message: `task ${id} deleted succesfully`});
+  return res.status(204).json({ message: `task ${id} deleted succesfully` });
 };
 
 const filterDone = (req, res) => {

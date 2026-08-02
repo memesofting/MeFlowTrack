@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node initDb.js && node seed.js",
+    "start": "node initDb.js && node seed.js && node index.js",
     "dev": "nodemon index.js"
   },
   "keywords": [],
@@ -12,12 +12,13 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "better-sqlite3": "^13.0.1",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "nodemon": "^3.1.14",
     "pg": "^8.22.0",
     "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   },
   "allowScripts": {
     "better-sqlite3@13.0.1": true,

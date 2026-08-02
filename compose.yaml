@@ -1,0 +1,22 @@
+services:
+  api:
+    build: .
+    container_name: task-api
+    ports: [ "3000:3000" ]
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: dev
+      DB_NAME: tasks
+    depends_on: [ db ]
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: tasks
+    ports:
+      - "5432:5432"
+    volumes: [ taskdata:/var/lib/postgresql/data ]
+volumes:
+  taskdata:
