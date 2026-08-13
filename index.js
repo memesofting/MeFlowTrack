@@ -144,6 +144,11 @@ const login = async (req, res) => {
   });
 };
 
+const signOut = async(req, res) =>{
+  const { error } = await supabase.auth.signOut()
+  return res.status(204).send()
+}
+
 const filterDone = (req, res) => {
   const filterCondition = req.params;
   const filtered = allTasks.filter((task) => (task.done = filterCondition));
@@ -156,7 +161,7 @@ const getPublicInfo = (req, res) =>{
   })
 }
 
-const getProtected = async (req, res) => {
+const authMiddleware = async(req, res, next) =>{
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     return res.status(401).json({ error: "Access token required" });
@@ -175,10 +180,15 @@ const getProtected = async (req, res) => {
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 
+  res.locals.user = data
+  next()
+}
+
+const getProtected = async (req, res) => {
   return res.status(200).json({ 
     message: "user profile", 
-    userId: data.user.id,
-    userEmail: data.user.email
+    userId: res.locals.user.user.id,
+    userEmail: res.locals.user.user.email
   });
 };
 
@@ -208,8 +218,10 @@ app.delete("/tasks/:id", deleteTask);
 
 app.post("/auth/signup", signup);
 app.post("/auth/login", login);
+app.post("/auth/logout", authMiddleware, signOut);
 app.get("/public/info", getPublicInfo)
-app.get("/protected/profile", getProtected)
+app.get("/protected/profile", authMiddleware, getProtected)
+app.get("/protected/dashboard",authMiddleware, getProtected)
 
 // app.get('/allTasks', filterDone)
 
