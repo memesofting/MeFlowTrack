@@ -177,7 +177,8 @@ const getProtected = async (req, res) => {
 
   return res.status(200).json({ 
     message: "user profile", 
-    user: data.user 
+    userId: data.user.id,
+    userEmail: data.user.email
   });
 };
 
