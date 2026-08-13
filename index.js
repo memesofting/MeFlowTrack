@@ -150,6 +150,37 @@ const filterDone = (req, res) => {
   console.log(filtered);
 };
 
+const getPublicInfo = (req, res) =>{
+  res.status(200).json({
+    message: "Welcome stranger! This info is public."
+  })
+}
+
+const getProtected = async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: "Access token required" });
+  }
+
+  const parts = authHeader.split(" ");
+  if (parts.length !== 2 || parts[0] !== "Bearer") {
+    return res.status(401).json({ error: "Invalid Authorization header" });
+  }
+
+  const accessToken = parts[1];
+
+  const { data, error } = await supabase.auth.getUser(accessToken);
+
+  if (error || !data?.user) {
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
+
+  return res.status(200).json({ 
+    message: "user profile", 
+    user: data.user 
+  });
+};
+
 app.get("/", (req, res) => {
   res.send({
     name: "Task API",
@@ -176,6 +207,8 @@ app.delete("/tasks/:id", deleteTask);
 
 app.post("/auth/signup", signup);
 app.post("/auth/login", login);
+app.get("/public/info", getPublicInfo)
+app.get("/protected/profile", getProtected)
 
 // app.get('/allTasks', filterDone)
 
